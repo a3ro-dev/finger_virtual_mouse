@@ -1,24 +1,28 @@
-# Finger-Mouse
+# Finger Virtual Mouse
 
-This program implements MediaPipe's pre-trained solutions and PyAutoGUI's mouse functionality for using fingers as a mouse.
+Control your mouse using hand gestures captured by your webcam. This application uses MediaPipe for hand tracking and supports both X11 and Wayland (including Hyprland).
 
 ## Features
 
-- **LEFT-CLICK**: Index Finger + Thumb
-- **RIGHT-CLICK**: Middle Finger + Thumb
+- **X11 and Wayland (Hyprland) support**
+- **GPU acceleration** where available
+- **Smooth mouse movement** with exponential smoothing
+- **Multiple gestures** for different mouse actions:
+  - INDEX FINGER + THUMB = LEFT CLICK
+  - MIDDLE FINGER + THUMB = RIGHT CLICK
+  - RING FINGER + THUMB = DOUBLE CLICK
+  - PINKY + THUMB = SCROLL MODE
+- **Real-time FPS display** to monitor performance
 
-## Getting Started
+## Requirements
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
-### Prerequisites
-
-- Python 3.x
-- OpenCV 
+- Python 3.6+
+- OpenCV
 - MediaPipe
-- PyAutoGUI
+- PyAutoGUI (for X11) or pynput/ydotool (for Wayland)
+- NumPy
 
-### Installing
+## Installation
 
 1. Clone the repository
 ```bash
