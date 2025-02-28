@@ -352,3 +352,126 @@ class HandGestureMouse:
         
         # Display FPS
         self.fps = self._calculate_fps()
+        cv2.putText(frame, f"FPS: {self.fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        
+        # Display mode
+        cv2.putText(frame, f"Press 'q' to quit", (10, frame_height - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        return frame
+    
+    def _perform_actions(self, index_y, thumb_y, middle_y, ring_y, pinky_y):
+        """Perform mouse actions based on detected finger positions."""
+        # Don't perform clicks if we're in cooldown period
+        current_time = time.time()
+        if current_time < self.click_cooldown:
+            return
+        
+        # Left click: Index finger and thumb close together
+        if index_y is not None and abs(index_y - thumb_y) < 20:
+            print("LEFT-CLICK ACTION")
+            self.mouse_controller.left_click()
+            self.click_cooldown = current_time + 0.5  # 500ms cooldown
+        
+        # Right click: Middle finger and thumb close together
+        elif middle_y is not None and abs(middle_y - thumb_y) < 20:
+            print("RIGHT-CLICK ACTION")
+            self.mouse_controller.right_click()
+            self.click_cooldown = current_time + 0.5  # 500ms cooldown
+        
+        # Double click: Ring finger and thumb close together
+        elif ring_y is not None and abs(ring_y - thumb_y) < 20:
+            print("DOUBLE-CLICK ACTION")
+            self.mouse_controller.double_click()
+            self.click_cooldown = current_time + 0.8  # 800ms cooldown
+        
+        # Scroll mode: Pinky and thumb close together
+        elif pinky_y is not None and abs(pinky_y - thumb_y) < 20:
+            print("SCROLL MODE")
+            # In scroll mode, up/down motion of index finger controls scrolling
+            if index_y < self.prev_y - 10:  # Scrolling up
+                self.mouse_controller.scroll(5)
+            elif index_y > self.prev_y + 10:  # Scrolling down
+                self.mouse_controller.scroll(-5)
+            self.click_cooldown = current_time + 0.1  # 100ms cooldown for smooth scrolling
+    
+    def run(self):
+        """Run the main loop for hand gesture detection and mouse control."""
+        print("Virtual Mouse Control Started")
+        print("Press 'q' to quit")
+        
+        while True:
+            frame = self.process_frame()
+            if frame is None:
+                print("Failed to capture frame. Exiting...")
+                break
+            
+            cv2.imshow("Virtual Mouse", frame)
+            
+            # Press 'q' to exit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        
+        self.cleanup()
+    
+    def cleanup(self):
+        """Release resources and clean up."""
+        self.cap.release()
+        cv2.destroyAllWindows()
+        print("Virtual Mouse Control Ended")
+
+def main():
+    """Main function to run the application."""
+    # Parse command line arguments if any
+    use_gpu = True  # Default to True
+    
+    try:
+        # Simple arg parsing
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "--no-gpu":
+                use_gpu = False
+            elif sys.argv[1] == "--install-deps":
+                install_wayland_dependencies()
+                return 0
+    except Exception as e:
+        print(f"Error parsing arguments: {e}")
+    
+    # Create and run the hand gesture mouse controller
+    try:
+        controller = HandGestureMouse(use_gpu=use_gpu)
+        controller.run()
+    except Exception as e:
+        print(f"Error running hand gesture mouse: {e}")
+        return 1
+    
+    return 0
+
+def install_wayland_dependencies():
+    """Helper function to install Wayland dependencies."""
+    print("Installing Wayland dependencies...")
+    
+    # Detect distribution
+    distro = ""
+    if os.path.exists("/etc/arch-release"):
+        distro = "arch"
+    elif os.path.exists("/etc/debian_version"):
+        distro = "debian"
+    elif os.path.exists("/etc/fedora-release"):
+        distro = "fedora"
+    
+    if distro == "arch":
+        print("Detected Arch Linux")
+        subprocess.run(["sudo", "pacman", "-S", "--needed", "ydotool", "python-pynput"])
+    elif distro == "debian":
+        print("Detected Debian/Ubuntu")
+        subprocess.run(["sudo", "apt", "install", "-y", "ydotool", "python3-pynput"])
+    elif distro == "fedora":
+        print("Detected Fedora")
+        subprocess.run(["sudo", "dnf", "install", "-y", "ydotool", "python3-pynput"])
+    else:
+        print("Unknown distribution. Please install ydotool and python-pynput manually.")
+    
+    print("Done. Please make sure ydotool service is running:")
+    print("  sudo systemctl enable --now ydotool")
+
+if __name__ == '__main__':
+    sys.exit(main())
